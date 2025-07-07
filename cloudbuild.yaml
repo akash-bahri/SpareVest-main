@@ -66,7 +66,7 @@ steps:
           --platform=managed \
           --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA \
           --allow-unauthenticated \
-          --set-env-vars=VITE_API_BASE_URL=$BACKEND_URL
+          --set-env-vars=VITE_API_BASE_URL=$$BACKEND_URL
 
   # 8. Get the frontend URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -90,7 +90,7 @@ steps:
         source /workspace/frontend-url.env
         gcloud run services update sparevest-backend \
           --region=northamerica-northeast2 \
-          --update-env-vars=FRONTEND_URL=$FRONTEND_URL
+          --update-env-vars=FRONTEND_URL=$$FRONTEND_URL
 
 images:
   - northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA
