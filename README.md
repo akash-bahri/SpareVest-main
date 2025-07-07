@@ -40,8 +40,8 @@ A full-stack web application that simulates a micro-investing platform. The app 
 
 ## 👥 Contributors
 
-- Your Name ([@yourgithub](https://github.com/yourgithub)) - Timezone: UTC+X
-- Partner Name ([@partnergithub](https://github.com/partnergithub)) - Timezone: UTC+Y
+- Akash Bahri ([@yourgithub](https://github.com/yourgithub)) - Timezone: UTC+X
+- Jai Garg ([@partnergithub](https://github.com/partnergithub)) - Timezone: UTC+Y
 
 ---
 
