@@ -48,10 +48,10 @@ steps:
     args:
       - -c
       - |
-        URL=$(gcloud run services describe sparevest-backend \
+        URL=`gcloud run services describe sparevest-backend \
           --region=northamerica-northeast2 \
-          --format='value(status.url)')
-        echo "BACKEND_URL=$URL" > /workspace/backend-url.env
+          --format='value(status.url)'`
+        echo "BACKEND_URL=$$URL" > /workspace/backend-url.env
 
   # 7. Deploy frontend with discovered backend URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -75,10 +75,10 @@ steps:
     args:
       - -c
       - |
-        URL=$(gcloud run services describe sparevest-frontend \
+        URL=`gcloud run services describe sparevest-frontend \
           --region=northamerica-northeast2 \
-          --format='value(status.url)')
-        echo "FRONTEND_URL=$URL" > /workspace/frontend-url.env
+          --format='value(status.url)'`
+        echo "FRONTEND_URL=$$URL" > /workspace/frontend-url.env
 
   # 9. Patch backend to inject FRONTEND_URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
