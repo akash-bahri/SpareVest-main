@@ -7,25 +7,11 @@ steps:
       - northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA
       - ./backend
 
-  # 2. Build frontend image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - build
-      - '-t'
-      - northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
-      - ./frontend
-
   # 3. Push backend image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - push
       - northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA
-
-  # 4. Push frontend image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - push
-      - northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
 
   # 5. Deploy backend (no FRONTEND_URL)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -53,20 +39,32 @@ steps:
           --format='value(status.url)'`
         echo "BACKEND_URL=$$URL" > /workspace/backend-url.env
 
-  # 7. Deploy frontend with discovered backend URL
+  # 7a. Build & push frontend with the real backend URL baked in
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: deploy-frontend
+    id: build-and-push-frontend
     entrypoint: bash
     args:
       - -c
       - |
         source /workspace/backend-url.env
-        gcloud run deploy sparevest-frontend \
-          --region=northamerica-northeast2 \
-          --platform=managed \
-          --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA \
-          --allow-unauthenticated \
-          --set-env-vars=VITE_API_BASE_URL=$$BACKEND_URL
+        docker build \
+          --build-arg VITE_API_BASE_URL=$BACKEND_URL \
+          -t northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA \
+          ./frontend
+        docker push northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
+
+  # 7b. Deploy the frontend image you just built (no runtime env-var needed)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-frontend
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - sparevest-frontend
+      - --region=northamerica-northeast2
+      - --platform=managed
+      - --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
+      - --allow-unauthenticated
 
   # 8. Get the frontend URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
