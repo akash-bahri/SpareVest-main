@@ -40,7 +40,7 @@ steps:
         echo "BACKEND_URL=$$URL" > /workspace/backend-url.env
 
   # 7a. Build & push frontend with the real backend URL baked in
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: 'gcr.io/cloud-builders/docker'
     id: build-and-push-frontend
     entrypoint: bash
     args:
@@ -48,12 +48,12 @@ steps:
       - |
         source /workspace/backend-url.env
         docker build \
-          --build-arg VITE_API_BASE_URL=$BACKEND_URL \
+          --build-arg VITE_API_BASE_URL=$$BACKEND_URL \
           -t northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA \
           ./frontend
         docker push northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
 
-  # 7b. Deploy the frontend image you just built (no runtime env-var needed)
+  # 7b. Deploy that image
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: deploy-frontend
     entrypoint: gcloud
