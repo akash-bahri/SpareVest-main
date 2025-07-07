@@ -25,14 +25,10 @@ async def root():
     return {"message": "Welcome to the SpareVest API"}
 
 # CORS configuration
-origins = [
-    "http://localhost:80",
-    "http://localhost",
-    FRONTEND_URL
-]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],        # allow requests from any origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
