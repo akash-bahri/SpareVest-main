@@ -57,3 +57,5 @@ steps:
 images:
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA'
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA'
+
+logging: CLOUD_LOGGING_ONLY
