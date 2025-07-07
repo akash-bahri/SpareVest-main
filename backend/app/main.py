@@ -14,6 +14,14 @@ from app.core.config import FRONTEND_URL
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        # allow requests from any origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Health-check endpoint
 @app.get("/healthz")
 async def healthz():
@@ -26,13 +34,7 @@ async def root():
 
 # CORS configuration
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],        # allow requests from any origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 # Your API routers
 app.include_router(user_router.router)
