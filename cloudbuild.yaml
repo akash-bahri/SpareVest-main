@@ -27,8 +27,9 @@ steps:
       - push
       - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA'
 
-  # 5. Deploy backend with secrets injected as env vars
+  # 5. Deploy backend without FRONTEND_URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-backend
     entrypoint: gcloud
     args:
       - run
@@ -38,22 +39,64 @@ steps:
       - --platform=managed
       - --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA
       - --allow-unauthenticated
-      - --set-secrets=DATABASE_URL=projects/$PROJECT_NUMBER/secrets/DATABASE_URL:latest,TEST_DATABASE_URL=projects/$PROJECT_NUMBER/secrets/TEST_DATABASE_URL:latest,SECRET_KEY=projects/$PROJECT_NUMBER/secrets/SECRET_KEY:latest,GMAIL_PASS=projects/$PROJECT_NUMBER/secrets/GMAIL_PASS:latest,GMAIL_USER=projects/$PROJECT_NUMBER/secrets/GMAIL_USER:latest,FRONTEND_URL=projects/$PROJECT_NUMBER/secrets/FRONTEND_URL:latest
+      - --set-secrets=\
+DATABASE_URL=projects/$PROJECT_ID/secrets/DATABASE_URL:latest,\
+TEST_DATABASE_URL=projects/$PROJECT_ID/secrets/TEST_DATABASE_URL:latest,\
+SECRET_KEY=projects/$PROJECT_ID/secrets/SECRET_KEY:latest,\
+GMAIL_PASS=projects/$PROJECT_ID/secrets/GMAIL_PASS:latest,\
+GMAIL_USER=projects/$PROJECT_ID/secrets/GMAIL_USER:latest
 
-  # 6. Deploy frontend with API base URL
+  # 6. Get the backend URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    id: get-backend-url
+    entrypoint: bash
     args:
-      - run
-      - deploy
-      - sparevest-frontend
-      - --region=northamerica-northeast2
-      - --platform=managed
-      - --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA
-      - --allow-unauthenticated
-      - --set-env-vars=VITE_API_BASE_URL=https://REPLACE_WITH_YOUR_BACKEND_URL
+      - -c
+      - |
+        URL=$(gcloud run services describe sparevest-backend \
+          --region=northamerica-northeast2 \
+          --format='value(status.url)')
+        echo "BACKEND_URL=$URL" > /workspace/backend-url.env
 
-# Declare the built images for cleanup/visibility
+  # 7. Deploy frontend with discovered backend URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-frontend
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        source /workspace/backend-url.env
+        gcloud run deploy sparevest-frontend \
+          --region=northamerica-northeast2 \
+          --platform=managed \
+          --image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA \
+          --allow-unauthenticated \
+          --set-env-vars=VITE_API_BASE_URL=$BACKEND_URL
+
+  # 8. Get the frontend URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: get-frontend-url
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        URL=$(gcloud run services describe sparevest-frontend \
+          --region=northamerica-northeast2 \
+          --format='value(status.url)')
+        echo "FRONTEND_URL=$URL" > /workspace/frontend-url.env
+
+  # 9. Patch backend to inject FRONTEND_URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: update-backend
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        source /workspace/frontend-url.env
+        gcloud run services update sparevest-backend \
+          --region=northamerica-northeast2 \
+          --update-env-vars=FRONTEND_URL=$FRONTEND_URL
+
 images:
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-backend:$SHORT_SHA'
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/sparevest/sparevest-frontend:$SHORT_SHA'
